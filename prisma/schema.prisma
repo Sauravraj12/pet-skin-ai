@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Member {
+  id        String   @id @default(cuid())
+  name      String?
+  email     String?
+  mobile    String?
+  lineId    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  pets    Pet[]
+  clicks  ProductClick[]
+  sessions ScreeningSession[]
+}
+
+model Pet {
+  id        String   @id @default(cuid())
+  memberId  String
+  name      String
+  species   String
+  breed     String?
+  age       String?
+  sex      String?
+  weight   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  member  Member @relation(fields: [memberId], references: [id])
+  sessions ScreeningSession[]
+}
+
+model ScreeningSession {
+  id             String   @id @default(cuid())
+  memberId       String
+  petId          String
+  imageUrl       String?
+  screeningDate  DateTime @default(now())
+  overallRisk    String
+  confidence     Float?
+  imageQuality   String?
+  summary        String?
+  createdAt      DateTime @default(now())
+
+  member        Member @relation(fields: [memberId], references: [id])
+  pet           Pet @relation(fields: [petId], references: [id])
+  indicators    ScreeningIndicator[]
+  recommendations Recommendation[]
+  clicks        ProductClick[]
+}
+
+model ScreeningIndicator {
+  id                String   @id @default(cuid())
+  screeningSessionId String
+  code              String
+  label             String
+  severity          String
+  confidence        Float?
+
+  screeningSession ScreeningSession @relation(fields: [screeningSessionId], references: [id])
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String
+  imageUrl    String?
+  category    String
+  price       Float
+  currency    String   @default("USD")
+  purchaseUrl String
+  active      Boolean  @default(true)
+  tags        String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  recommendations Recommendation[]
+  clicks          ProductClick[]
+}
+
+model Recommendation {
+  id                String   @id @default(cuid())
+  screeningSessionId String
+  productId         String
+  reason            String
+  rank              Int
+  createdAt         DateTime @default(now())
+
+  screeningSession ScreeningSession @relation(fields: [screeningSessionId], references: [id])
+  product          Product @relation(fields: [productId], references: [id])
+}
+
+model ProductClick {
+  id                String   @id @default(cuid())
+  memberId          String?
+  screeningSessionId String?
+  productId         String
+  timestamp         DateTime @default(now())
+  source            String   @default("web")
+  userAgent         String?
+  referrer          String?
+
+  member            Member? @relation(fields: [memberId], references: [id])
+  screeningSession  ScreeningSession? @relation(fields: [screeningSessionId], references: [id])
+  product           Product @relation(fields: [productId], references: [id])
+}
