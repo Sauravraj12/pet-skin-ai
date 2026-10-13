@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { CheckCircle2, Shield, Smartphone, Sparkles } from "lucide-react";
+import { Shield, Smartphone, Sparkles } from "lucide-react";
+import SiteHeader from "@/components/site-header";
 
 const benefits = [
   { icon: Smartphone, title: "Smartphone-based", description: "Take a pet skin photo directly from your phone." },
@@ -11,20 +12,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-transparent text-slate-900">
       <section className="mx-auto max-w-md px-4 pb-16 pt-6 sm:max-w-5xl">
-        <header className="mb-8 flex items-center justify-between rounded-full border border-slate-200/80 bg-white/75 px-4 py-3 shadow-[0_12px_40px_rgba(15,23,42,0.06)] backdrop-blur-md">
-          <div className="flex items-center gap-2">
-            <div className="rounded-full bg-[#ECFDF5] p-2 text-[#0F766E] shadow-inner shadow-[#0F766E]/10">
-              <CheckCircle2 className="h-5 w-5" />
-            </div>
-            <span className="text-lg font-bold tracking-tight">AI Pet Skin Check</span>
-          </div>
-          <nav className="hidden gap-5 text-sm font-medium text-slate-600 sm:flex">
-            <Link href="/how-it-works" className="transition hover:text-[#0F766E]">How it works</Link>
-            <Link href="/demo" className="transition hover:text-[#0F766E]">Demo</Link>
-            <Link href="/history" className="transition hover:text-[#0F766E]">History</Link>
-            <Link href="/admin" className="transition hover:text-[#0F766E]">Admin</Link>
-          </nav>
-        </header>
+        <SiteHeader />
 
         <div className="grid gap-8 rounded-[2rem] border border-slate-200/80 bg-gradient-to-br from-white via-[#f8fafc] to-[#ecfdf5] p-4 shadow-[0_20px_60px_rgba(15,23,42,0.06)] ring-1 ring-white/70 sm:grid-cols-2 sm:items-center sm:p-8">
           <div>
