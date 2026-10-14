@@ -304,12 +304,6 @@ export default function CheckPage() {
               </div>
             ) : null}
 
-            {photoValidated ? (
-              <p role="status" className="mt-3 rounded-2xl bg-white p-3 text-sm font-medium text-[#0F766E]">
-                Clear {species.toLowerCase()} photo verified. Ready to analyze.
-              </p>
-            ) : null}
-
             {error ? <div role="alert" className="mt-3 rounded-2xl bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
             {file && !photoValidated && !validatingPhoto && error && !error.includes("wrong photo") ? (
               <button type="button" onClick={() => void validatePetPhoto(file)} className="mt-2 text-sm font-semibold text-[#0F766E] underline">
