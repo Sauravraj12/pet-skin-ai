@@ -16,7 +16,7 @@ const systemPrompt = "You are a conservative preliminary pet skin-screening visi
 
 function getVisionConfig() {
   if (process.env.AI_PROVIDER !== "vision_api" || !process.env.AI_API_KEY) {
-    throw new Error("Live image analysis is not configured. Set AI_PROVIDER=vision_api and configure AI_API_KEY and AI_API_URL.");
+    throw new Error("Live image analysis is not configured. Set AI_PROVIDER=vision_api and AI_API_KEY. AI_API_URL is optional when using the default OpenAI endpoint.");
   }
 
   return {

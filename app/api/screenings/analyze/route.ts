@@ -89,7 +89,7 @@ export async function POST(request: Request) {
     const notConfigured = process.env.AI_PROVIDER !== "vision_api" || !process.env.AI_API_KEY;
     return jsonError(
       notConfigured
-        ? "Live pet-photo validation is not configured. Set AI_PROVIDER=vision_api and configure AI_API_KEY and AI_API_URL, then retry."
+        ? "Live pet-photo validation is not configured. Set AI_PROVIDER=vision_api and add your AI_API_KEY to .env.local, then restart the dev server. AI_API_URL is optional for the default OpenAI endpoint."
         : "We couldn't complete the image analysis. Please try again with a clear photo.",
       503,
       "VISION_UNAVAILABLE",

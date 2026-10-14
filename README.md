@@ -79,7 +79,7 @@ npx prisma migrate dev --name init
 
 ## AI Provider Setup
 
-Real screenings require an OpenAI-compatible Chat Completions vision endpoint. Set `AI_PROVIDER=vision_api`, `AI_API_KEY`, and optionally `AI_API_URL` and `AI_MODEL`. The default URL is OpenAI's `/v1/chat/completions` endpoint and the default model is `gpt-4o-mini`. The endpoint must accept image data URLs and JSON-object responses. Pet-photo classification runs before skin analysis; no live result is generated when the provider is unconfigured or unavailable.
+Real screenings require an OpenAI-compatible Chat Completions vision endpoint. Copy `.env.example` to `.env.local`, set `AI_PROVIDER=vision_api`, and add a valid `AI_API_KEY`. `AI_API_URL` is optional for the default OpenAI `/v1/chat/completions` endpoint; set it only when using another compatible provider. `AI_MODEL` defaults to `gpt-4o-mini`. The endpoint must accept image data URLs and JSON-object responses. Restart the dev server after changing environment variables. Pet-photo classification runs before skin analysis; no live result is generated when the provider is unconfigured or unavailable.
 
 The `/demo` scenarios use deterministic mock reports for presentation only. The mock provider is never used by the real upload-and-screen flow.
 
