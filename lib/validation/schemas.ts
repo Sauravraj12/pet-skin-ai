@@ -30,7 +30,8 @@ export const aiIndicatorSchema = z.object({
 });
 
 export const analysisResultSchema = z.object({
-  overallRisk: z.enum(["GREEN", "YELLOW", "RED"]),
+  petSpecies: z.enum(["Dog", "Cat"]),
+  overallRisk: z.enum(["GREEN", "YELLOW", "RED", "UNABLE_TO_DETERMINE"]),
   confidence: z.number().min(0).max(1),
   imageQuality: z.enum(["GOOD", "FAIR", "POOR"]),
   visibleIndicators: z.array(aiIndicatorSchema),
@@ -38,6 +39,11 @@ export const analysisResultSchema = z.object({
   recommendations: z.array(z.string()),
   veterinaryAdvice: z.boolean(),
   disclaimer: z.string(),
+});
+
+export const visionAssessmentSchema = analysisResultSchema.extend({
+  petDetected: z.boolean(),
+  petSpecies: z.enum(["Dog", "Cat", "Other", "Uncertain"]),
 });
 
 export const productClickSchema = z.object({

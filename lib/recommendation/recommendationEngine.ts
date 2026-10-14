@@ -14,7 +14,12 @@ export type ProductRecommendation = {
   purchaseUrl: string;
 };
 
-const productCatalog = [
+type CatalogProduct = Omit<ProductRecommendation, "reason" | "rank"> & {
+  suitableSpecies: ("Dog" | "Cat")[];
+  tags: string[];
+};
+
+export const productCatalog: CatalogProduct[] = [
   {
     id: "prod_fur_skin_lecithin",
     name: "Fur & Skin Care Lecithin",
@@ -25,6 +30,7 @@ const productCatalog = [
     price: 29,
     currency: "USD",
     purchaseUrl: "https://example.com/fur-skin-care-lecithin",
+    suitableSpecies: ["Dog", "Cat"],
     tags: ["hair_loss", "dryness", "skin", "fur"],
   },
   {
@@ -37,6 +43,7 @@ const productCatalog = [
     price: 24,
     currency: "USD",
     purchaseUrl: "https://example.com/functional-egg-roll",
+    suitableSpecies: ["Dog", "Cat"],
     tags: ["skin", "general_wellness", "nutrition"],
   },
   {
@@ -49,6 +56,7 @@ const productCatalog = [
     price: 34,
     currency: "USD",
     purchaseUrl: "https://example.com/hypoallergenic-immune-repair-formula",
+    suitableSpecies: ["Dog", "Cat"],
     tags: ["redness", "sensitive_skin", "immune_support"],
   },
 ];
@@ -57,34 +65,31 @@ const map: Record<string, string[]> = {
   DRYNESS: ["prod_fur_skin_lecithin"],
   HAIR_LOSS: ["prod_fur_skin_lecithin", "prod_functional_egg_roll"],
   REDNESS: ["prod_hypoallergenic"],
+  DANDRUFF: ["prod_fur_skin_lecithin"],
+  IRRITATION: ["prod_hypoallergenic"],
   SENSITIVE_SKIN: ["prod_hypoallergenic"],
   SCALING: ["prod_fur_skin_lecithin"],
   MILD_GENERAL_SKIN_CONCERN: ["prod_functional_egg_roll"],
 };
 
 export function getRecommendedProducts(result: AnalysisResult): ProductRecommendation[] {
-  const indicators = result.visibleIndicators.map((indicator) => indicator.code);
-  const selected: ProductRecommendation[] = [];
+  if (result.overallRisk === "RED" || result.overallRisk === "UNABLE_TO_DETERMINE") return [];
 
-  const productIds = new Set<string>();
-  for (const code of indicators) {
-    const ids = map[code] || [];
-    ids.forEach((id) => productIds.add(id));
-  }
+  const indicators = result.visibleIndicators.map((indicator) => indicator.code.trim().toUpperCase().replace(/[\s-]+/g, "_"));
+  const matchedIds = result.overallRisk === "GREEN"
+    ? productCatalog.filter((product) => product.tags.includes("general_wellness")).map((product) => product.id)
+    : [...new Set(indicators.flatMap((code) => map[code] || []))];
 
-  if (productIds.size === 0) {
-    productIds.add("prod_functional_egg_roll");
-  }
-
-  const ordered = productCatalog.filter((product) => productIds.has(product.id));
-  ordered.forEach((product, index) => {
-    const reason = `Recommended based on detected ${indicators.join(", ") || "general skin concern"}.`;
-    selected.push({
-      ...product,
-      reason,
-      rank: index + 1,
+  return productCatalog
+    .filter((product) => matchedIds.includes(product.id) && product.suitableSpecies.includes(result.petSpecies))
+    .map((product, index) => {
+      const matchedConcerns = indicators.filter((code) => (map[code] || []).includes(product.id));
+      return {
+        ...product,
+        reason: result.overallRisk === "GREEN"
+          ? "General skin and coat care for routine wellness."
+          : `Selected for the detected ${matchedConcerns.join(", ").toLowerCase().replaceAll("_", " ")} concern(s).`,
+        rank: index + 1,
+      };
     });
-  });
-
-  return selected;
 }

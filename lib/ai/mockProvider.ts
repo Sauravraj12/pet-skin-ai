@@ -5,6 +5,7 @@ export type DemoScenario = "GREEN" | "YELLOW" | "RED";
 export function getMockAnalysisResult(scenario: DemoScenario): AnalysisResult {
   const map: Record<DemoScenario, AnalysisResult> = {
     GREEN: {
+      petSpecies: "Dog",
       overallRisk: "GREEN",
       confidence: 0.86,
       imageQuality: "GOOD",
@@ -25,6 +26,7 @@ export function getMockAnalysisResult(scenario: DemoScenario): AnalysisResult {
       disclaimer: "This is an AI preliminary screening and not a veterinary diagnosis.",
     },
     YELLOW: {
+      petSpecies: "Dog",
       overallRisk: "YELLOW",
       confidence: 0.82,
       imageQuality: "GOOD",
@@ -58,6 +60,7 @@ export function getMockAnalysisResult(scenario: DemoScenario): AnalysisResult {
       disclaimer: "This is an AI preliminary screening and not a veterinary diagnosis.",
     },
     RED: {
+      petSpecies: "Dog",
       overallRisk: "RED",
       confidence: 0.9,
       imageQuality: "GOOD",

@@ -79,12 +79,11 @@ npx prisma migrate dev --name init
 
 ## AI Provider Setup
 
-The project supports:
+Real screenings require an OpenAI-compatible Chat Completions vision endpoint. Set `AI_PROVIDER=vision_api`, `AI_API_KEY`, and optionally `AI_API_URL` and `AI_MODEL`. The default URL is OpenAI's `/v1/chat/completions` endpoint and the default model is `gpt-4o-mini`. The endpoint must accept image data URLs and JSON-object responses. Pet-photo classification runs before skin analysis; no live result is generated when the provider is unconfigured or unavailable.
 
-- AI_PROVIDER=vision_api for a live provider integration point
-- AI_PROVIDER=mock for deterministic demo results
+The `/demo` scenarios use deterministic mock reports for presentation only. The mock provider is never used by the real upload-and-screen flow.
 
-The mock mode is designed for demos and does not silently replace production AI. It is clearly labelled internally and intended for development/testing.
+Screening history and product-click counts are stored in the current browser's local storage and are not shared between devices. The current admin analytics endpoint still contains sample values; server-wide persistence requires applying the Prisma schema/migrations and configuring PostgreSQL.
 
 ## Image Storage Setup
 

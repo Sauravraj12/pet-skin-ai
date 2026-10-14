@@ -1,36 +1,15 @@
-import { getMockAnalysisResult } from "@/lib/ai/mockProvider";
-import { callVisionApi } from "@/lib/ai/visionProvider";
+import { analyzeValidatedPetPhoto } from "@/lib/ai/visionProvider";
+import { buildRiskSummary } from "@/lib/ai/riskEngine";
 import { analysisResultSchema, type AnalysisResult } from "@/lib/validation/schemas";
 
 export type SkinAnalysisInput = {
-  species?: string;
-  petName?: string;
-  image?: File | null;
-  demoScenario?: "GREEN" | "YELLOW" | "RED";
+  species: "Dog" | "Cat";
+  image: File;
 };
 
 export async function analyzePetSkin(input: SkinAnalysisInput): Promise<AnalysisResult> {
-  const provider = process.env.AI_PROVIDER || "vision_api";
-
-  if (provider === "mock" || input.demoScenario) {
-    const scenario = input.demoScenario || "YELLOW";
-    const result = getMockAnalysisResult(scenario);
-    const parsed = analysisResultSchema.safeParse(result);
-    if (!parsed.success) {
-      throw new Error("Mock AI result failed schema validation");
-    }
-    return parsed.data;
-  }
-
-  if (!input.image) {
-    throw new Error("Image is required for AI analysis.");
-  }
-
-  const result = await callVisionApi(input.image);
+  const result = await analyzeValidatedPetPhoto(input.image, input.species);
   const parsed = analysisResultSchema.safeParse(result);
-  if (!parsed.success) {
-    throw new Error("AI output did not pass schema validation.");
-  }
-
-  return parsed.data;
+  if (!parsed.success) throw new Error("AI output did not pass schema validation.");
+  return buildRiskSummary(parsed.data);
 }
