@@ -1,5 +1,10 @@
 import type { AnalysisResult } from "@/lib/validation/schemas";
 
+export const HIGH_RISK_RECOMMENDATIONS = [
+  "Arrange a prompt examination with a licensed veterinarian.",
+  "Avoid applying medication or topical products unless your veterinarian recommends them.",
+];
+
 export function buildRiskSummary(result: AnalysisResult): AnalysisResult {
   const normalized = { ...result };
 
@@ -11,8 +16,11 @@ export function buildRiskSummary(result: AnalysisResult): AnalysisResult {
     return normalized;
   }
 
-  if (normalized.overallRisk === "RED" && !normalized.veterinaryAdvice) {
+  if (normalized.overallRisk === "RED") {
     normalized.veterinaryAdvice = true;
+    if (normalized.recommendations.length === 0) {
+      normalized.recommendations = [...HIGH_RISK_RECOMMENDATIONS];
+    }
   }
 
   return normalized;

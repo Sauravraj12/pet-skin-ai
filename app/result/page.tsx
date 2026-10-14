@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Suspense, useSyncExternalStore } from "react";
 import { useSearchParams } from "next/navigation";
 import { getMockAnalysisResult, type DemoScenario } from "@/lib/ai/mockProvider";
+import { HIGH_RISK_RECOMMENDATIONS } from "@/lib/ai/riskEngine";
 import { getRecommendedProducts, type ProductRecommendation } from "@/lib/recommendation/recommendationEngine";
 import {
   getEmptyScreeningHistorySnapshot,
@@ -37,8 +38,19 @@ function ResultContent() {
     ? getMockAnalysisResult(scenario)
     : null;
   const result: AnalysisResult | null = id ? screening?.result || null : demoResult;
+  const screeningGuidance = result
+    ? result.recommendations.length > 0
+      ? result.recommendations
+      : result.overallRisk === "RED"
+        ? HIGH_RISK_RECOMMENDATIONS
+        : []
+    : [];
   const recommendations: ProductRecommendation[] = id
-    ? screening?.recommendations || []
+    ? screening
+      ? screening.recommendations?.length
+        ? screening.recommendations
+        : getRecommendedProducts(screening.result)
+      : []
     : demoResult ? getRecommendedProducts(demoResult) : [];
   const screeningId = id || (demoResult ? `demo_${demoResult.overallRisk.toLowerCase()}` : "");
   const loading = Boolean(id) && !hydrated;
@@ -132,7 +144,7 @@ function ResultContent() {
           {result.veterinaryAdvice ? (
             <div className="flex items-start gap-3 text-[#0F766E]">
               <Stethoscope className="mt-0.5 h-5 w-5 shrink-0" />
-              <p>For persistent, painful, rapidly worsening, bleeding, infected-looking, or severe lesions, consult a licensed veterinarian promptly.</p>
+              <p>{result.overallRisk === "RED" ? "This high-concern result should be assessed by a licensed veterinarian promptly." : "For persistent, painful, rapidly worsening, bleeding, infected-looking, or severe lesions, consult a licensed veterinarian promptly."}</p>
             </div>
           ) : (
             <p>{result.disclaimer}</p>
@@ -140,11 +152,11 @@ function ResultContent() {
         </div>
       </section>
 
-      {result.recommendations.length > 0 ? (
+      {screeningGuidance.length > 0 ? (
         <section className="mt-6 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
           <h2 className="text-lg font-bold">Screening guidance</h2>
           <ul className="mt-4 space-y-2 text-sm text-slate-700">
-            {result.recommendations.map((item, index) => (
+            {screeningGuidance.map((item, index) => (
               <li key={`${index}-${item}`} className="flex gap-3 rounded-2xl bg-slate-50 p-3">
                 <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-[#0F766E]" />
                 <span>{item}</span>

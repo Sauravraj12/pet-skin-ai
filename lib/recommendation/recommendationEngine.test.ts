@@ -39,10 +39,26 @@ test("normalizes model concern codes before matching products", () => {
   assert.deepEqual(products.map((product) => product.id), ["prod_fur_skin_lecithin"]);
 });
 
+test("matches common aliases and labels returned by vision models", () => {
+  const products = getRecommendedProducts(result({
+    visibleIndicators: [{ code: "OTHER", label: "Mild skin irritation", severity: "MILD", confidence: 0.8 }],
+  }));
+
+  assert.deepEqual(products.map((product) => product.id), ["prod_hypoallergenic"]);
+});
+
+test("offers general skin and coat support for unmatched yellow results", () => {
+  const products = getRecommendedProducts(result({
+    visibleIndicators: [{ code: "OTHER", label: "Unclassified mild change", severity: "MILD", confidence: 0.8 }],
+  }));
+
+  assert.deepEqual(products.map((product) => product.id), ["prod_functional_egg_roll"]);
+  assert.match(products[0].reason, /general skin and coat support/i);
+});
+
 test("returns no supplements for high-risk, uncertain, or unmatched findings", () => {
   assert.deepEqual(getRecommendedProducts(result({ overallRisk: "RED" })), []);
   assert.deepEqual(getRecommendedProducts(result({ overallRisk: "UNABLE_TO_DETERMINE" })), []);
-  assert.deepEqual(getRecommendedProducts(result({ visibleIndicators: [{ code: "UNKNOWN", label: "Unknown", severity: "MILD", confidence: 0.5 }] })), []);
 });
 
 test("green recommendations use general-care catalog tags", () => {

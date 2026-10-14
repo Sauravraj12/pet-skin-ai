@@ -33,3 +33,17 @@ test("uses uncertainty for low confidence or unusable image quality", () => {
   const poorQuality = buildRiskSummary(result({ imageQuality: "POOR" }));
   assert.equal(poorQuality.overallRisk, "UNABLE_TO_DETERMINE");
 });
+
+test("adds safe veterinary next steps when a high-risk result has no recommendations", () => {
+  const highRisk = buildRiskSummary(result({
+    overallRisk: "RED",
+    recommendations: [],
+    veterinaryAdvice: false,
+  }));
+
+  assert.deepEqual(highRisk.recommendations, [
+    "Arrange a prompt examination with a licensed veterinarian.",
+    "Avoid applying medication or topical products unless your veterinarian recommends them.",
+  ]);
+  assert.equal(highRisk.veterinaryAdvice, true);
+});

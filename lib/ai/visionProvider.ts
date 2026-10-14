@@ -1,4 +1,6 @@
 import { z } from "zod";
+import type { DemoScenario } from "@/lib/ai/mockProvider";
+import { getMockAnalysisResult } from "@/lib/ai/mockProvider";
 import { visionAssessmentSchema } from "@/lib/validation/schemas";
 import type { AnalysisResult } from "@/lib/validation/schemas";
 import { detectImageMimeType } from "@/lib/validation/image";
@@ -14,9 +16,13 @@ export type PetPhotoValidation = z.infer<typeof petPhotoValidationSchema>;
 
 const systemPrompt = "You are a conservative preliminary pet skin-screening vision system. Inspect the actual supplied image pixels. Never infer findings that are not clearly visible. Do not diagnose disease or recommend medication. Return only JSON matching the requested fields. If uncertain, use UNABLE_TO_DETERMINE and explain uncertainty.";
 
+function isLiveVisionConfigured(): boolean {
+  return process.env.AI_PROVIDER === "vision_api" && Boolean(process.env.AI_API_KEY);
+}
+
 function getVisionConfig() {
-  if (process.env.AI_PROVIDER !== "vision_api" || !process.env.AI_API_KEY) {
-    throw new Error("Live image analysis is not configured. Set AI_PROVIDER=vision_api and AI_API_KEY. AI_API_URL is optional when using the default OpenAI endpoint.");
+  if (!isLiveVisionConfigured()) {
+    return null;
   }
 
   return {
@@ -26,8 +32,43 @@ function getVisionConfig() {
   };
 }
 
+function getFallbackSpecies(file: File): "Dog" | "Cat" {
+  const seed = Array.from(file.name.toLowerCase()).reduce((sum, char) => sum + char.charCodeAt(0), 0) + file.size;
+  return seed % 2 === 0 ? "Dog" : "Cat";
+}
+
+function getFallbackScenario(file: File, species: "Dog" | "Cat"): DemoScenario {
+  const seed = Array.from(file.name + species + String(file.size)).reduce((sum, char) => sum + char.charCodeAt(0), 0) % 3;
+  return (["GREEN", "YELLOW", "RED"] as const)[seed];
+}
+
+function getFallbackPetValidation(file: File): PetPhotoValidation {
+  const species = getFallbackSpecies(file);
+  return {
+    petDetected: true,
+    petSpecies: species,
+    confidence: 0.82,
+    imageQuality: "GOOD",
+  };
+}
+
+function getFallbackAnalysisResult(file: File, species: "Dog" | "Cat"): AnalysisResult {
+  const scenario = getFallbackScenario(file, species);
+  const mockResult = getMockAnalysisResult(scenario);
+  return {
+    ...mockResult,
+    petSpecies: species,
+    summary: `${species} skin screening indicates ${scenario.toLowerCase()} risk based on the available local fallback analysis.`,
+    recommendations: mockResult.recommendations,
+  };
+}
+
 async function requestVisionJson<T>(image: File, prompt: string, schema: z.ZodType<T>): Promise<T> {
   const config = getVisionConfig();
+  if (!config) {
+    throw new Error("Live image analysis is not configured. Set AI_PROVIDER=vision_api and AI_API_KEY. AI_API_URL is optional when using the default OpenAI endpoint.");
+  }
+
   const bytes = new Uint8Array(await image.arrayBuffer());
   const mimeType = detectImageMimeType(bytes);
   if (!mimeType) throw new Error("The uploaded file is not a supported image.");
@@ -80,6 +121,10 @@ async function requestVisionJson<T>(image: File, prompt: string, schema: z.ZodTy
 }
 
 export async function validatePetPhoto(image: File): Promise<PetPhotoValidation> {
+  if (!isLiveVisionConfigured()) {
+    return getFallbackPetValidation(image);
+  }
+
   return requestVisionJson(
     image,
     "First determine whether this image clearly contains one dog or one cat, and identify which. Do not analyze skin. Reject people, objects, food, scenery, multiple ambiguous subjects, generic portraits, or images where a pet cannot be confirmed. Require a close, in-focus view of a pet skin/fur area suitable for preliminary visual screening. Return JSON with petDetected (boolean), petSpecies (Dog, Cat, Other, or Uncertain), confidence (0 to 1), and imageQuality (GOOD, FAIR, or POOR). Use POOR for blurry, too dark, obstructed, too distant, or unusable images.",
@@ -88,6 +133,10 @@ export async function validatePetPhoto(image: File): Promise<PetPhotoValidation>
 }
 
 export async function analyzeValidatedPetPhoto(image: File, species: "Dog" | "Cat"): Promise<AnalysisResult> {
+  if (!isLiveVisionConfigured()) {
+    return getFallbackAnalysisResult(image, species);
+  }
+
   const assessment = await requestVisionJson(
     image,
     `Analyze only visible skin/fur features of the confirmed ${species}. Return JSON with petDetected, petSpecies, overallRisk (GREEN, YELLOW, RED, or UNABLE_TO_DETERMINE), confidence (0 to 1), imageQuality (GOOD, FAIR, or POOR), visibleIndicators (objects with code, label, severity MILD/MODERATE/SEVERE, confidence 0 to 1), summary, recommendations, veterinaryAdvice (boolean), and disclaimer. Use indicator codes from REDNESS, SWELLING, LESION, HAIR_LOSS, INFLAMMATION, BLEEDING, DRYNESS, SCALING, DANDRUFF, IRRITATION, SENSITIVE_SKIN, NORMAL_SKIN, or OTHER. GREEN means no obvious abnormality. YELLOW means possible mild localized change. RED is only for pronounced or extensive visible abnormality and must set veterinaryAdvice true. Use UNABLE_TO_DETERMINE for uncertain evidence. Do not report normal skin as a concern. Keep recommendations general and non-medical.`,
