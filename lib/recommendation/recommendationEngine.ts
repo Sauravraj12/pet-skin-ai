@@ -14,9 +14,11 @@ export type ProductRecommendation = {
   purchaseUrl: string;
 };
 
-type CatalogProduct = Omit<ProductRecommendation, "reason" | "rank"> & {
+export type CatalogProduct = Omit<ProductRecommendation, "reason" | "rank"> & {
   suitableSpecies: ("Dog" | "Cat")[];
   tags: string[];
+  inStock: boolean;
+  features: string[];
 };
 
 export const productCatalog: CatalogProduct[] = [
@@ -29,9 +31,11 @@ export const productCatalog: CatalogProduct[] = [
     category: "Skin",
     price: 29,
     currency: "USD",
-    purchaseUrl: "https://example.com/fur-skin-care-lecithin",
+    purchaseUrl: "/products/fur-skin-care-lecithin",
     suitableSpecies: ["Dog", "Cat"],
     tags: ["hair_loss", "dryness", "skin", "fur"],
+    inStock: true,
+    features: ["Supports coat and skin wellness", "Suitable for dogs and cats", "Easy daily routine"],
   },
   {
     id: "prod_functional_egg_roll",
@@ -42,9 +46,11 @@ export const productCatalog: CatalogProduct[] = [
     category: "Nutrition",
     price: 24,
     currency: "USD",
-    purchaseUrl: "https://example.com/functional-egg-roll",
+    purchaseUrl: "/products/functional-egg-roll",
     suitableSpecies: ["Dog", "Cat"],
     tags: ["skin", "general_wellness", "nutrition"],
+    inStock: true,
+    features: ["General skin and coat nourishment", "Suitable for dogs and cats", "Presentation-ready pet treat"],
   },
   {
     id: "prod_hypoallergenic",
@@ -55,9 +61,11 @@ export const productCatalog: CatalogProduct[] = [
     category: "Immune",
     price: 34,
     currency: "USD",
-    purchaseUrl: "https://example.com/hypoallergenic-immune-repair-formula",
+    purchaseUrl: "/products/hypoallergenic-immune-repair-formula",
     suitableSpecies: ["Dog", "Cat"],
     tags: ["redness", "sensitive_skin", "immune_support"],
+    inStock: true,
+    features: ["For sensitive skin routines", "Supports normal immune wellness", "Suitable for dogs and cats"],
   },
 ];
 

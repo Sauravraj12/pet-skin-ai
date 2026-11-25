@@ -14,7 +14,11 @@ function jsonError(message: string, status: number, code: string) {
 }
 
 function validationTokenSecret(): string {
-  return process.env.SCREENING_TOKEN_SECRET || process.env.AI_API_KEY || "";
+  const secret = process.env.SCREENING_TOKEN_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error("SCREENING_TOKEN_SECRET must contain at least 32 characters.");
+  }
+  return secret;
 }
 
 export async function POST(request: Request) {

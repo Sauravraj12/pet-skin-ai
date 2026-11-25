@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { validatePetPhoto } from "./visionProvider";
 
-test("uses a local fallback when the live vision config is missing", async () => {
+test("rejects live validation when the vision config is missing", async () => {
   const previousProvider = process.env.AI_PROVIDER;
   const previousKey = process.env.AI_API_KEY;
 
@@ -14,11 +14,7 @@ test("uses a local fallback when the live vision config is missing", async () =>
       type: "image/png",
     });
 
-    const result = await validatePetPhoto(file);
-    assert.equal(result.petDetected, true);
-    assert.ok(result.petSpecies === "Dog" || result.petSpecies === "Cat");
-    assert.ok(result.confidence >= 0 && result.confidence <= 1);
-    assert.ok(result.imageQuality === "GOOD" || result.imageQuality === "FAIR" || result.imageQuality === "POOR");
+    await assert.rejects(() => validatePetPhoto(file), /Live image analysis is not configured/);
   } finally {
     if (previousProvider === undefined) delete process.env.AI_PROVIDER;
     else process.env.AI_PROVIDER = previousProvider;

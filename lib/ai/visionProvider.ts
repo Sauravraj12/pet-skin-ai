@@ -1,6 +1,5 @@
 import { z } from "zod";
-import type { DemoScenario } from "@/lib/ai/mockProvider";
-import { getMockAnalysisResult } from "@/lib/ai/mockProvider";
+
 import { visionAssessmentSchema } from "@/lib/validation/schemas";
 import type { AnalysisResult } from "@/lib/validation/schemas";
 import { detectImageMimeType } from "@/lib/validation/image";
@@ -29,37 +28,6 @@ function getVisionConfig() {
     url: process.env.AI_API_URL || "https://api.openai.com/v1/chat/completions",
     key: process.env.AI_API_KEY,
     model: process.env.AI_MODEL || "gpt-4o-mini",
-  };
-}
-
-function getFallbackSpecies(file: File): "Dog" | "Cat" {
-  const seed = Array.from(file.name.toLowerCase()).reduce((sum, char) => sum + char.charCodeAt(0), 0) + file.size;
-  return seed % 2 === 0 ? "Dog" : "Cat";
-}
-
-function getFallbackScenario(file: File, species: "Dog" | "Cat"): DemoScenario {
-  const seed = Array.from(file.name + species + String(file.size)).reduce((sum, char) => sum + char.charCodeAt(0), 0) % 3;
-  return (["GREEN", "YELLOW", "RED"] as const)[seed];
-}
-
-function getFallbackPetValidation(file: File): PetPhotoValidation {
-  const species = getFallbackSpecies(file);
-  return {
-    petDetected: true,
-    petSpecies: species,
-    confidence: 0.82,
-    imageQuality: "GOOD",
-  };
-}
-
-function getFallbackAnalysisResult(file: File, species: "Dog" | "Cat"): AnalysisResult {
-  const scenario = getFallbackScenario(file, species);
-  const mockResult = getMockAnalysisResult(scenario);
-  return {
-    ...mockResult,
-    petSpecies: species,
-    summary: `${species} skin screening indicates ${scenario.toLowerCase()} risk based on the available local fallback analysis.`,
-    recommendations: mockResult.recommendations,
   };
 }
 
@@ -121,9 +89,7 @@ async function requestVisionJson<T>(image: File, prompt: string, schema: z.ZodTy
 }
 
 export async function validatePetPhoto(image: File): Promise<PetPhotoValidation> {
-  if (!isLiveVisionConfigured()) {
-    return getFallbackPetValidation(image);
-  }
+  if (!isLiveVisionConfigured()) throw new Error("Live image analysis is not configured.");
 
   return requestVisionJson(
     image,
@@ -133,9 +99,7 @@ export async function validatePetPhoto(image: File): Promise<PetPhotoValidation>
 }
 
 export async function analyzeValidatedPetPhoto(image: File, species: "Dog" | "Cat"): Promise<AnalysisResult> {
-  if (!isLiveVisionConfigured()) {
-    return getFallbackAnalysisResult(image, species);
-  }
+  if (!isLiveVisionConfigured()) throw new Error("Live image analysis is not configured.");
 
   const assessment = await requestVisionJson(
     image,

@@ -1,18 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { CheckCircle2, Menu, X } from "lucide-react";
+import { useState, useSyncExternalStore } from "react";
+import { CheckCircle2, Menu, ShoppingCart, X } from "lucide-react";
+import { getCartCount, getCartSnapshot, getEmptyCartSnapshot, subscribeToCart } from "@/lib/storefront";
 
 const navigationLinks = [
   { href: "/how-it-works", label: "How it works" },
   { href: "/demo", label: "Demo" },
   { href: "/history", label: "History" },
+  { href: "/products", label: "Shop" },
   { href: "/admin", label: "Admin" },
 ];
 
 export default function SiteHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const cart = useSyncExternalStore(subscribeToCart, getCartSnapshot, getEmptyCartSnapshot);
+  const cartCount = getCartCount(cart);
 
   return (
     <header className="relative mb-8 flex items-center justify-between rounded-full border border-slate-200/80 bg-white/75 px-4 py-3 shadow-[0_12px_40px_rgba(15,23,42,0.06)] backdrop-blur-md">
@@ -29,6 +33,10 @@ export default function SiteHeader() {
             {label}
           </Link>
         ))}
+        <Link href="/cart" className="relative flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-700" aria-label={`Shopping cart with ${cartCount} items`}>
+          <ShoppingCart className="h-4 w-4" />
+          {cartCount > 0 ? <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#0F766E] px-1 text-[10px] font-bold text-white">{cartCount}</span> : null}
+        </Link>
       </nav>
 
       <button
@@ -58,6 +66,14 @@ export default function SiteHeader() {
               {label}
             </Link>
           ))}
+          <Link
+            href="/cart"
+            className="flex min-h-11 items-center justify-between rounded-xl px-3 transition hover:bg-[#ECFDF5] hover:text-[#0F766E]"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            <span>Cart</span>
+            {cartCount > 0 ? <span className="rounded-full bg-[#0F766E] px-2 py-1 text-xs font-bold text-white">{cartCount}</span> : null}
+          </Link>
         </nav>
       )}
     </header>

@@ -14,6 +14,7 @@ import {
   subscribeToScreeningHistory,
 } from "@/lib/screenings/clientHistory";
 import type { AnalysisResult } from "@/lib/validation/schemas";
+import { addToCart } from "@/lib/storefront";
 
 export default function ResultPage() {
   return (
@@ -180,7 +181,10 @@ function ResultContent() {
                       <span className="shrink-0 text-xs font-medium text-[#0F766E]">{product.category}</span>
                     </div>
                     <p className="mt-1 text-xs text-slate-500">{product.reason}</p>
-                    <a href={product.purchaseUrl} target="_blank" rel="noreferrer" onClick={() => handleProductClick(product.id)} className="mt-2 inline-flex rounded-full bg-[#0F766E] px-3 py-2 text-xs font-medium text-white">View product</a>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <button type="button" onClick={() => { handleProductClick(product.id); addToCart(product.id); }} className="inline-flex rounded-full bg-[#0F766E] px-3 py-2 text-xs font-medium text-white">Add to cart</button>
+                      <Link href={product.purchaseUrl} onClick={() => handleProductClick(product.id)} className="inline-flex rounded-full border border-[#0F766E] px-3 py-2 text-xs font-medium text-[#0F766E]">View & buy</Link>
+                    </div>
                   </div>
                 </div>
               </div>

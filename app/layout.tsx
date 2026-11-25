@@ -14,8 +14,24 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Pet Skin Check",
-  description: "AI preliminary pet skin screening and supplement recommendations.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
+  title: {
+    default: "AI Pet Skin Check",
+    template: "%s | AI Pet Skin Check",
+  },
+  description: "Get a preliminary AI-assisted pet skin screening from a clear dog or cat photo. Fast guidance with veterinary safety reminders.",
+  keywords: ["pet skin check", "dog skin screening", "cat skin screening", "AI pet health", "pet skin health"],
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    title: "AI Pet Skin Check",
+    description: "Preliminary AI-assisted skin screening for dogs and cats.",
+    siteName: "AI Pet Skin Check",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
