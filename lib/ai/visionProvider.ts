@@ -1,3 +1,4 @@
+import OpenAI from "openai";
 import { z } from "zod";
 
 import { visionAssessmentSchema } from "@/lib/validation/schemas";
@@ -15,20 +16,26 @@ export type PetPhotoValidation = z.infer<typeof petPhotoValidationSchema>;
 
 const systemPrompt = "You are a conservative preliminary pet skin-screening vision system. Inspect the actual supplied image pixels. Never infer findings that are not clearly visible. Do not diagnose disease or recommend medication. Return only JSON matching the requested fields. If uncertain, use UNABLE_TO_DETERMINE and explain uncertainty.";
 
-function isLiveVisionConfigured(): boolean {
-  return process.env.AI_PROVIDER === "vision_api" && Boolean(process.env.AI_API_KEY);
-}
-
 function getVisionConfig() {
-  if (!isLiveVisionConfigured()) {
+  const key = process.env.AI_API_KEY || process.env.OPENAI_API_KEY;
+  if (process.env.AI_PROVIDER !== "vision_api" || !key) {
     return null;
   }
 
+  const apiUrl = process.env.AI_API_URL?.trim();
+  const baseURL = apiUrl
+    ? `${apiUrl.replace(/\/chat\/completions\/?$/, "").replace(/\/+$/, "")}/`
+    : undefined;
+
   return {
-    url: process.env.AI_API_URL || "https://api.openai.com/v1/chat/completions",
-    key: process.env.AI_API_KEY,
-    model: process.env.AI_MODEL || "gpt-4o-mini",
+    key,
+    baseURL,
+    model: process.env.AI_MODEL || "gpt-4o",
   };
+}
+
+export function isLiveVisionConfigured(): boolean {
+  return getVisionConfig() !== null;
 }
 
 async function requestVisionJson<T>(image: File, prompt: string, schema: z.ZodType<T>): Promise<T> {
@@ -41,39 +48,31 @@ async function requestVisionJson<T>(image: File, prompt: string, schema: z.ZodTy
   const mimeType = detectImageMimeType(bytes);
   if (!mimeType) throw new Error("The uploaded file is not a supported image.");
 
-  const response = await fetch(config.url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${config.key}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: config.model,
-      temperature: 0,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: systemPrompt },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            {
-              type: "image_url",
-              image_url: { url: `data:${mimeType};base64,${Buffer.from(bytes).toString("base64")}`, detail: "high" },
-            },
-          ],
-        },
-      ],
-    }),
-    signal: AbortSignal.timeout(45_000),
+  const openai = new OpenAI({
+    apiKey: config.key,
+    baseURL: config.baseURL,
+    timeout: 45_000,
+    maxRetries: 0,
   });
-
-  if (!response.ok) {
-    throw new Error(`Vision service request failed with status ${response.status}.`);
-  }
-
-  const payload: unknown = await response.json();
-  const content = (payload as { choices?: Array<{ message?: { content?: unknown } }> })?.choices?.[0]?.message?.content;
+  const response = await openai.chat.completions.create({
+    model: config.model,
+    temperature: 0,
+    response_format: { type: "json_object" },
+    messages: [
+      { role: "system", content: systemPrompt },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: prompt },
+          {
+            type: "image_url",
+            image_url: { url: `data:${mimeType};base64,${Buffer.from(bytes).toString("base64")}`, detail: "high" },
+          },
+        ],
+      },
+    ],
+  });
+  const content = response.choices[0]?.message?.content;
   if (typeof content !== "string") throw new Error("Vision service returned an unreadable response.");
 
   let decoded: unknown;

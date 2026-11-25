@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export function proxy(request: NextRequest) {
-  const isProtected = request.nextUrl.pathname === "/admin" || request.nextUrl.pathname.startsWith("/api/admin/");
+  const isProtected = request.nextUrl.pathname.startsWith("/api/admin/");
   if (!isProtected) return NextResponse.next();
 
   const secret = process.env.ADMIN_SECRET;
@@ -34,5 +34,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin", "/api/admin/:path*"],
+  matcher: ["/api/admin/:path*"],
 };

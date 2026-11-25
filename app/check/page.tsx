@@ -25,6 +25,7 @@ export default function CheckPage() {
   const [consent, setConsent] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState("");
+  const [showDemoLink, setShowDemoLink] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | "">("");
   const [validatingPhoto, setValidatingPhoto] = useState(false);
   const [photoValidated, setPhotoValidated] = useState(false);
@@ -50,6 +51,7 @@ export default function CheckPage() {
   const validatePetPhoto = async (selectedFile: File) => {
     const requestId = ++validationRequestRef.current;
     setError("");
+    setShowDemoLink(false);
     setPhotoValidated(false);
     setValidatingPhoto(true);
 
@@ -67,6 +69,11 @@ export default function CheckPage() {
 
       if (requestId !== validationRequestRef.current) return;
       if (!response.ok || !payload.success || !payload.validation?.valid) {
+        if (payload.code === "VISION_UNAVAILABLE") {
+          setError("Live photo screening is unavailable right now. You can explore a sample result in the demo.");
+          setShowDemoLink(true);
+          return;
+        }
         setError(payload.message || "We couldn't validate this photo. Please try another clear pet photo.");
         if (payload.code === "NOT_A_PET_PHOTO" || payload.code === "IMAGE_QUALITY_TOO_LOW" || payload.code === "PET_NOT_CONFIRMED") {
           clearPhoto(false);
@@ -88,6 +95,7 @@ export default function CheckPage() {
 
   const handleFileChange = async (selectedFile: File | null) => {
     setError("");
+    setShowDemoLink(false);
     if (!selectedFile) return;
 
     clearPhoto();
@@ -136,6 +144,7 @@ export default function CheckPage() {
     submissionLockRef.current = true;
     setSubmitting(true);
     setError("");
+    setShowDemoLink(false);
     try {
       const form = new FormData();
       form.set("mode", "analyze");
@@ -153,6 +162,13 @@ export default function CheckPage() {
       };
 
       if (!response.ok || !payload.success || !payload.screeningId || !payload.result) {
+        if (payload.code === "VISION_UNAVAILABLE") {
+          setError("Live photo screening is unavailable right now. You can explore a sample result in the demo.");
+          setShowDemoLink(true);
+          submissionLockRef.current = false;
+          setSubmitting(false);
+          return;
+        }
         if (payload.code === "NOT_A_PET_PHOTO" || payload.code === "IMAGE_QUALITY_TOO_LOW" || payload.code === "PET_NOT_CONFIRMED") {
           setError(payload.message || "This photo could not be confirmed. Please choose another clear pet photo.");
           clearPhoto(false);
@@ -304,7 +320,19 @@ export default function CheckPage() {
               </div>
             ) : null}
 
-            {error ? <div role="alert" className="mt-3 rounded-2xl bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
+            {error ? (
+              <div
+                role={showDemoLink ? "status" : "alert"}
+                className={`mt-3 rounded-2xl p-3 text-sm ${showDemoLink ? "bg-amber-50 text-amber-900" : "bg-red-50 text-red-700"}`}
+              >
+                <p>{error}</p>
+                {showDemoLink ? (
+                  <Link href="/demo" className="mt-2 inline-flex font-semibold text-[#0F766E] underline">
+                    View sample demo
+                  </Link>
+                ) : null}
+              </div>
+            ) : null}
             {file && !photoValidated && !validatingPhoto && error && !error.includes("wrong photo") ? (
               <button type="button" onClick={() => void validatePetPhoto(file)} className="mt-2 text-sm font-semibold text-[#0F766E] underline">
                 Retry photo validation
