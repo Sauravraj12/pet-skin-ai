@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export function proxy(request: NextRequest) {
-  const isProtected = request.nextUrl.pathname.startsWith("/api/admin/");
+  const isProtected = request.nextUrl.pathname.startsWith("/api/admin/")
+    || request.nextUrl.pathname.startsWith("/api/veterinary/");
   if (!isProtected) return NextResponse.next();
 
   const secret = process.env.ADMIN_SECRET;

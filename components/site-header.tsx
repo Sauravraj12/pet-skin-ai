@@ -9,7 +9,9 @@ const navigationLinks = [
   { href: "/how-it-works", label: "How it works" },
   { href: "/demo", label: "Demo" },
   { href: "/history", label: "History" },
+  { href: "/dashboard", label: "Dashboard" },
   { href: "/products", label: "Shop" },
+  { href: "/veterinary", label: "Veterinary" },
   { href: "/admin", label: "Admin" },
 ];
 

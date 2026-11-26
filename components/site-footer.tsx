@@ -7,6 +7,9 @@ const footerLinks = [
   { href: "/check", label: "Skin Check" },
   { href: "/history", label: "History" },
   { href: "/products", label: "Shop" },
+  { href: "/veterinary", label: "Veterinary" },
+  { href: "/privacy", label: "Privacy" },
+  { href: "/terms", label: "Terms" },
   { href: "/admin", label: "Admin" },
 ];
 

@@ -3,113 +3,332 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 model Member {
-  id        String   @id @default(cuid())
-  name      String?
-  email     String?
-  mobile    String?
-  lineId    String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String    @id @default(cuid())
+  name         String?
+  email        String?
+  mobile       String?
+  lineId       String?
+  role         UserRole  @default(OWNER)
+  passwordHash String?
+  deletedAt    DateTime?
+  lastActiveAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  pets    Pet[]
-  clicks  ProductClick[]
-  sessions ScreeningSession[]
+  pets           Pet[]
+  clicks         ProductClick[]
+  sessions       ScreeningSession[]
+  consentRecords ConsentRecord[]
+  notifications  Notification[]
+  auditLogs      AuditLog[]
+  ownedCases     CaseReview[]       @relation("OwnerCases")
 }
 
 model Pet {
-  id        String   @id @default(cuid())
-  memberId  String
-  name      String
-  species   String
-  breed     String?
-  age       String?
-  sex      String?
-  weight   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String    @id @default(cuid())
+  memberId        String
+  name            String
+  species         String
+  breed           String?
+  age             String?
+  sex             String?
+  weight          String?
+  gender          String?
+  profilePhotoUrl String?
+  deletedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  member  Member @relation(fields: [memberId], references: [id])
-  sessions ScreeningSession[]
+  member      Member             @relation(fields: [memberId], references: [id])
+  sessions    ScreeningSession[]
+  caseReviews CaseReview[]
+  followUps   FollowUpReminder[]
 }
 
 model ScreeningSession {
-  id             String   @id @default(cuid())
-  memberId       String
-  petId          String
-  imageUrl       String?
-  screeningDate  DateTime @default(now())
-  overallRisk    String
-  confidence     Float?
-  imageQuality   String?
-  summary        String?
-  createdAt      DateTime @default(now())
+  id                String         @id @default(cuid())
+  memberId          String
+  petId             String
+  imageUrl          String?
+  storageProvider   String?
+  storageKey        String?
+  providerName      String?
+  providerStatus    ProviderStatus @default(UNCONFIGURED)
+  providerErrorCode String?
+  screeningDate     DateTime       @default(now())
+  overallRisk       String
+  confidence        Float?
+  imageQuality      String?
+  summary           String?
+  notes             String?
+  status            CaseStatus     @default(NEW)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
-  member        Member @relation(fields: [memberId], references: [id])
-  pet           Pet @relation(fields: [petId], references: [id])
-  indicators    ScreeningIndicator[]
+  member          Member               @relation(fields: [memberId], references: [id])
+  pet             Pet                  @relation(fields: [petId], references: [id])
+  indicators      ScreeningIndicator[]
   recommendations Recommendation[]
-  clicks        ProductClick[]
+  clicks          ProductClick[]
+  images          ScreeningImage[]
+  caseReviews     CaseReview[]
+  followUps       FollowUpReminder[]
+  notifications   Notification[]
 }
 
 model ScreeningIndicator {
-  id                String   @id @default(cuid())
+  id                 String @id @default(cuid())
   screeningSessionId String
-  code              String
-  label             String
-  severity          String
-  confidence        Float?
+  code               String
+  label              String
+  severity           String
+  confidence         Float?
 
   screeningSession ScreeningSession @relation(fields: [screeningSessionId], references: [id])
 }
 
+model ScreeningImage {
+  id                 String    @id @default(cuid())
+  screeningSessionId String
+  storageProvider    String
+  storageKey         String
+  mimeType           String
+  byteSize           Int
+  sha256             String?
+  retentionUntil     DateTime?
+  createdAt          DateTime  @default(now())
+
+  screeningSession ScreeningSession @relation(fields: [screeningSessionId], references: [id], onDelete: Cascade)
+
+  @@index([screeningSessionId])
+  @@index([retentionUntil])
+}
+
 model Product {
-  id          String   @id @default(cuid())
-  name        String
-  slug        String   @unique
-  description String
-  imageUrl    String?
-  category    String
-  price       Float
-  currency    String   @default("USD")
-  purchaseUrl String
-  active      Boolean  @default(true)
-  tags        String[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String    @id @default(cuid())
+  name            String
+  slug            String    @unique
+  description     String
+  imageUrl        String?
+  category        String
+  price           Float
+  currency        String    @default("USD")
+  purchaseUrl     String
+  active          Boolean   @default(true)
+  tags            String[]
+  ingredients     String?
+  warnings        String?
+  usageInfo       String?
+  suitableSpecies String[]
+  sponsored       Boolean   @default(false)
+  affiliate       Boolean   @default(false)
+  inStock         Boolean   @default(true)
+  deletedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   recommendations Recommendation[]
   clicks          ProductClick[]
 }
 
 model Recommendation {
-  id                String   @id @default(cuid())
+  id                 String   @id @default(cuid())
   screeningSessionId String
-  productId         String
-  reason            String
-  rank              Int
-  createdAt         DateTime @default(now())
+  productId          String
+  reason             String
+  rank               Int
+  createdAt          DateTime @default(now())
+  sponsorDisclosure  String?
+  skipped            Boolean  @default(false)
 
   screeningSession ScreeningSession @relation(fields: [screeningSessionId], references: [id])
-  product          Product @relation(fields: [productId], references: [id])
+  product          Product          @relation(fields: [productId], references: [id])
 }
 
 model ProductClick {
-  id                String   @id @default(cuid())
-  memberId          String?
+  id                 String   @id @default(cuid())
+  memberId           String?
   screeningSessionId String?
-  productId         String
-  timestamp         DateTime @default(now())
-  source            String   @default("web")
-  userAgent         String?
-  referrer          String?
+  productId          String
+  timestamp          DateTime @default(now())
+  source             String   @default("web")
+  userAgent          String?
+  referrer           String?
 
-  member            Member? @relation(fields: [memberId], references: [id])
-  screeningSession  ScreeningSession? @relation(fields: [screeningSessionId], references: [id])
-  product           Product @relation(fields: [productId], references: [id])
+  member           Member?           @relation(fields: [memberId], references: [id])
+  screeningSession ScreeningSession? @relation(fields: [screeningSessionId], references: [id])
+  product          Product           @relation(fields: [productId], references: [id])
+}
+
+model Clinic {
+  id            String   @id @default(cuid())
+  name          String
+  address       String?
+  phone         String?
+  email         String?
+  licenseNumber String?
+  verified      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  veterinarians Veterinarian[]
+  caseReviews   CaseReview[]
+}
+
+model Veterinarian {
+  id            String   @id @default(cuid())
+  memberId      String   @unique
+  clinicId      String?
+  displayName   String
+  licenseNumber String?
+  verified      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  clinic      Clinic?      @relation(fields: [clinicId], references: [id])
+  caseReviews CaseReview[]
+}
+
+model CaseReview {
+  id                     String     @id @default(cuid())
+  screeningSessionId     String
+  petId                  String
+  ownerId                String
+  veterinarianId         String
+  clinicId               String?
+  status                 CaseStatus @default(SUBMITTED)
+  professionalComment    String?
+  examinationRecommended Boolean    @default(false)
+  authorizedAt           DateTime   @default(now())
+  reviewedAt             DateTime?
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+
+  screeningSession ScreeningSession @relation(fields: [screeningSessionId], references: [id], onDelete: Cascade)
+  pet              Pet              @relation(fields: [petId], references: [id])
+  owner            Member           @relation("OwnerCases", fields: [ownerId], references: [id])
+  veterinarian     Veterinarian     @relation(fields: [veterinarianId], references: [id])
+  clinic           Clinic?          @relation(fields: [clinicId], references: [id])
+
+  @@unique([screeningSessionId, veterinarianId])
+  @@index([ownerId, status])
+  @@index([veterinarianId, status])
+}
+
+model FollowUpReminder {
+  id                 String       @id @default(cuid())
+  screeningSessionId String?
+  petId              String
+  ownerId            String
+  type               ReminderType
+  dueAt              DateTime
+  completedAt        DateTime?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  screeningSession ScreeningSession? @relation(fields: [screeningSessionId], references: [id], onDelete: SetNull)
+  pet              Pet               @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId, dueAt])
+  @@index([petId, dueAt])
+}
+
+model Notification {
+  id                 String           @id @default(cuid())
+  memberId           String
+  screeningSessionId String?
+  type               NotificationType
+  title              String
+  body               String
+  readAt             DateTime?
+  emailSentAt        DateTime?
+  createdAt          DateTime         @default(now())
+
+  member           Member            @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  screeningSession ScreeningSession? @relation(fields: [screeningSessionId], references: [id], onDelete: SetNull)
+
+  @@index([memberId, readAt])
+}
+
+model ConsentRecord {
+  id              String      @id @default(cuid())
+  memberId        String
+  type            ConsentType
+  granted         Boolean
+  documentVersion String
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime    @default(now())
+
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([memberId, type])
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  memberId     String?
+  actorRole    String
+  action       String
+  resourceType String
+  resourceId   String?
+  outcome      String
+  metadata     Json?
+  ipAddress    String?
+  createdAt    DateTime @default(now())
+
+  member Member? @relation(fields: [memberId], references: [id], onDelete: SetNull)
+
+  @@index([memberId, createdAt])
+  @@index([resourceType, resourceId])
+  @@index([createdAt])
+}
+
+enum UserRole {
+  OWNER
+  VETERINARIAN
+  ADMIN
+}
+
+enum ProviderStatus {
+  SUCCESS
+  FAILED
+  UNCONFIGURED
+  VALIDATION_FAILED
+  DEMO
+}
+
+enum CaseStatus {
+  NEW
+  SUBMITTED
+  UNDER_REVIEW
+  REVIEWED
+  EXAMINATION_RECOMMENDED
+  CLOSED
+}
+
+enum ReminderType {
+  REPEAT_SCREENING
+  FOLLOW_UP
+  VETERINARY_REVIEW
+  REPORT_STATUS
+}
+
+enum NotificationType {
+  FOLLOW_UP
+  REPEAT_SCREENING
+  REPORT_STATUS
+  VETERINARY_REVIEW
+  SYSTEM
+}
+
+enum ConsentType {
+  IMAGE_PROCESSING
+  SCREENING_STORAGE
+  CONTACT
+  DATA_DELETION
 }

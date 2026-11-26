@@ -151,6 +151,12 @@ export default function CheckPage() {
       form.set("image", file);
       form.set("species", species);
       form.set("validationToken", validationToken);
+      form.set("petName", petName.trim());
+      form.set("ownerName", ownerName.trim());
+      form.set("email", email.trim());
+      form.set("mobile", mobile.trim());
+      form.set("lineId", lineId.trim());
+      form.set("consent", String(consent));
       const response = await fetch("/api/screenings/analyze", { method: "POST", body: form });
       const payload = await response.json() as {
         success: boolean;

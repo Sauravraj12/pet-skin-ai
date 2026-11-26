@@ -99,6 +99,17 @@ npm run dev
 
 Visit http://localhost:3000.
 
+## Database and Prisma 7
+
+Prisma 7 uses `prisma.config.ts` for the datasource URL and a PostgreSQL driver adapter. Set `DATABASE_URL` and `DIRECT_URL`, then:
+
+```bash
+npx prisma generate
+npx prisma migrate deploy
+```
+
+The migration in `prisma/migrations/20261126091500_product_upgrade` adds product health models, clinic/veterinarian records, reminders, notifications, consent, audit logs, and secure-image references. Existing databases must have the original Prisma tables before applying it.
+
 ## Demo Mode
 
 The demo page provides preset runs for:
@@ -142,9 +153,11 @@ This app processes pet images and owner metadata for preliminary screening. The 
 
 ## Known Limitations
 
-- Real AI inference is represented by the mock provider unless a live provider is configured.
-- Image storage is structured for abstraction but not yet connected to a cloud provider.
-- The database is designed for Prisma but requires a live PostgreSQL connection for runtime persistence.
+- Live AI inference requires a configured OpenAI-compatible vision provider. Missing or failed provider configuration returns an unavailable state; demo scenarios are isolated and explicitly labeled.
+- Image storage currently records an abstraction and retention-ready schema but does not yet upload bytes to Supabase or S3. Configure and implement an approved private provider before production use.
+- Database persistence requires a reachable PostgreSQL database and successful migration deployment.
+- Owner and veterinarian authentication are deployment-level areas that require an identity provider or a complete password/session implementation. The current veterinary workspace uses a configured credential and does not independently verify a veterinary license.
+- Product catalog details require manufacturer-verified ingredients, warnings, usage instructions, and sponsorship disclosure.
 
 ## Future Development
 

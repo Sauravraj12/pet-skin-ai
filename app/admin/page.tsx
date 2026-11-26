@@ -9,8 +9,13 @@ type Analytics = {
   green: number;
   yellow: number;
   red: number;
+  unable: number;
   productClicks: number;
   clickThroughRate: number;
+  activeThisMonth: number;
+  clinics: number;
+  veterinarians: number;
+  followUpsCompleted: number;
   screeningsByDay: { day: string; count: number }[];
 };
 
@@ -20,8 +25,13 @@ const emptyAnalytics: Analytics = {
   green: 0,
   yellow: 0,
   red: 0,
+  unable: 0,
   productClicks: 0,
   clickThroughRate: 0,
+  activeThisMonth: 0,
+  clinics: 0,
+  veterinarians: 0,
+  followUpsCompleted: 0,
   screeningsByDay: [],
 };
 
@@ -71,8 +81,13 @@ export default function AdminPage() {
     { label: "Green", value: analytics.green },
     { label: "Yellow", value: analytics.yellow },
     { label: "Red", value: analytics.red },
+    { label: "Unable to determine", value: analytics.unable },
     { label: "Product clicks", value: analytics.productClicks },
     { label: "CTR", value: `${Math.round(analytics.clickThroughRate * 100)}%` },
+    { label: "Monthly active users", value: analytics.activeThisMonth },
+    { label: "Clinics", value: analytics.clinics },
+    { label: "Veterinarians", value: analytics.veterinarians },
+    { label: "Follow-ups completed", value: analytics.followUpsCompleted },
   ];
 
   return (
@@ -120,7 +135,7 @@ export default function AdminPage() {
             <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
           ) : null}
 
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-7" aria-busy={loading}>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6" aria-busy={loading}>
             {cards.map((card) => (
               <div key={card.label} className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{card.label}</p>

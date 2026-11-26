@@ -181,6 +181,8 @@ function ResultContent() {
                       <span className="shrink-0 text-xs font-medium text-[#0F766E]">{product.category}</span>
                     </div>
                     <p className="mt-1 text-xs text-slate-500">{product.reason}</p>
+                    {product.sponsored ? <p className="mt-1 text-xs font-semibold text-amber-700">Sponsored or affiliate recommendation</p> : null}
+                    {product.warnings ? <p className="mt-1 text-xs text-slate-500">Safety: {product.warnings}</p> : null}
                     <div className="mt-2 flex flex-wrap gap-2">
                       <button type="button" onClick={() => { handleProductClick(product.id); addToCart(product.id); }} className="inline-flex rounded-full bg-[#0F766E] px-3 py-2 text-xs font-medium text-white">Add to cart</button>
                       <Link href={product.purchaseUrl} onClick={() => handleProductClick(product.id)} className="inline-flex rounded-full border border-[#0F766E] px-3 py-2 text-xs font-medium text-[#0F766E]">View & buy</Link>

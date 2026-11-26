@@ -4,6 +4,8 @@ import { analyzePetSkin } from "@/lib/ai/skinAnalyzer";
 import { getRecommendedProducts } from "@/lib/recommendation/recommendationEngine";
 import { createPhotoValidationToken, verifyPhotoValidationToken } from "@/lib/screenings/validationToken";
 import { detectImageMimeType, validateImage, validateImageSignature } from "@/lib/validation/image";
+import { getDatabase } from "@/lib/db";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 const wrongPhotoMessage = "⚠️ You selected the wrong photo. Please upload or capture a clear photo of a dog's or cat's skin.";
 const unclearPhotoMessage = "We couldn't clearly confirm a dog or cat skin photo. Please try a brighter, closer, in-focus photo.";
@@ -25,6 +27,15 @@ export async function POST(request: Request) {
   let mode: string;
 
   try {
+    const forwarded = request.headers.get("x-forwarded-for") || "unknown";
+    const ip = forwarded.split(",")[0]?.trim() || "unknown";
+    const limit = checkRateLimit(`screening:${ip}`, 12, 60_000);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { success: false, code: "RATE_LIMITED", message: "Too many screening requests. Please wait before retrying." },
+        { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
+      );
+    }
     const form = await request.formData();
     mode = String(form.get("mode") || "analyze");
     const image = form.get("image");
@@ -78,9 +89,85 @@ export async function POST(request: Request) {
     }
 
     const result = await analyzePetSkin({ image, species: validatedSpecies });
+    const petName = String(form.get("petName") || "Unnamed pet").trim().slice(0, 80);
+    const ownerName = String(form.get("ownerName") || "").trim().slice(0, 120) || null;
+    const email = String(form.get("email") || "").trim().slice(0, 254) || null;
+    const consent = String(form.get("consent") || "") === "true";
+    let screeningId = crypto.randomUUID();
+    let persisted = false;
+
+    if (process.env.DATABASE_URL || process.env.DIRECT_URL) {
+      try {
+        const db = getDatabase();
+        const member = await db.member.create({
+          data: {
+            name: ownerName,
+            email,
+            consentRecords: consent ? {
+              create: {
+                type: "SCREENING_STORAGE",
+                granted: true,
+                documentVersion: "2026-11-26",
+              },
+            } : undefined,
+          },
+        });
+        const pet = await db.pet.create({
+          data: {
+            memberId: member.id,
+            name: petName,
+            species: validatedSpecies,
+            breed: String(form.get("breed") || "").trim().slice(0, 80) || null,
+            age: String(form.get("age") || "").trim().slice(0, 40) || null,
+            sex: String(form.get("sex") || "").trim().slice(0, 20) || null,
+            weight: String(form.get("weight") || "").trim().slice(0, 40) || null,
+          },
+        });
+        const saved = await db.screeningSession.create({
+          data: {
+            memberId: member.id,
+            petId: pet.id,
+            providerName: process.env.AI_PROVIDER || "not-configured",
+            providerStatus: "SUCCESS",
+            overallRisk: result.overallRisk,
+            confidence: result.confidence,
+            imageQuality: result.imageQuality,
+            summary: result.summary,
+            indicators: {
+              create: result.visibleIndicators.map((indicator) => ({
+                code: indicator.code,
+                label: indicator.label,
+                severity: indicator.severity,
+                confidence: indicator.confidence,
+              })),
+            },
+          },
+        });
+        screeningId = saved.id;
+        persisted = true;
+
+        await db.notification.create({
+          data: {
+            memberId: member.id,
+            screeningSessionId: saved.id,
+            type: "REPORT_STATUS",
+            title: "Screening report ready",
+            body: "Your preliminary pet skin screening report is ready to review.",
+          },
+        });
+      } catch (error) {
+        console.error("[screenings/analyze] Database persistence failed", error instanceof Error ? error.message : "unknown error");
+      }
+    }
+
+    if (!persisted) {
+      console.warn("[screenings/analyze] Returning live AI result without database persistence.");
+    }
+
     return NextResponse.json({
       success: true,
-      screeningId: crypto.randomUUID(),
+      screeningId,
+      persisted,
       result,
       recommendations: getRecommendedProducts(result),
     });
